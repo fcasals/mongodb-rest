@@ -2,12 +2,46 @@
 /**
  * Module dependencies.
  */
+var config = '';
+var errorCount = 0;
+var fileNotExistsCount = 0;
+var fs = require("fs");
 
-var sys = require('sys');
-var fs = require('fs');
-var mongodbrest = require('../server');
+if(process.argv.length > 2) {
+  process.argv.forEach(function (val, index, array) {
+    if(index > 1) { 
+      if(val.substring(0,2) == '--' && val.indexOf('=') > -1) {
+          if(val.split('=')[0].substring(2,val.split('=')[0].length) == 'config') { 
+            if(fileExists(val.split('=')[1])) {
+              config = JSON.parse(fs.readFileSync(val.split('=')[1]));
+	    } else {
+	      fileNotExistsCount++;
+            }
+          } else {
+	    errorCount++;
+	  }
+      } else {
+        errorCount++;
+      }
+     }
+  });
+}
 
-mongodbrest.startServer();        
-		
+if(errorCount > 0) {
+  console.log('Usage: mongodb-rest --<command>=<value>\nwhere <command> is one of:\n\tconfig');
+} else if(fileNotExistsCount > 0) {
+  console.log('Error: The referenced file does not exist');
+} else {
+  var sys = require('sys');
+  var fs = require('fs');
+  var mongodbrest = require('../server');
 
+  mongodbrest.startServer(config);    	
+}
 
+function fileExists(file) {
+  if(fs.existsSync(file)) {
+    return true;
+  }
+  return false;
+}
